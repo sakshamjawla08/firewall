@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firewall Rule Engine | Security Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        <div class="logo">🛡</div>
+        <div>
+            <h1>Firewall Rule Engine</h1>
+            <p>Network Security Management System</p>
+        </div>
+    </div>
+
+    <div class="system-status">
+        <span class="status-dot"></span>
+        Firewall Simulator Online
+    </div>
+</header>
+
+<main class="container">
+
+    <section class="welcome">
+        <div>
+            <h2>Security Overview</h2>
+            <p>Monitor network traffic and manage firewall rules.</p>
+        </div>
+        <span class="date-label">LIVE DASHBOARD</span>
+    </section>
+
+    <!-- STATISTICS -->
+
+    <section class="stats-grid">
+
+        <div class="stat-card blue">
+            <span>Total Rules</span>
+            <h2>{{ total_rules }}</h2>
+            <small>Configured firewall rules</small>
+        </div>
+
+        <div class="stat-card purple">
+            <span>Traffic Tested</span>
+            <h2>{{ total_logs }}</h2>
+            <small>Total packet simulations</small>
+        </div>
+
+        <div class="stat-card red">
+            <span>Blocked Traffic</span>
+            <h2>{{ blocked }}</h2>
+            <small>Blocked packet tests</small>
+        </div>
+
+        <div class="stat-card green">
+            <span>Allowed Traffic</span>
+            <h2>{{ allowed }}</h2>
+            <small>Allowed packet tests</small>
+        </div>
+
+    </section>
+
+    <!-- ADD RULE -->
+
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Create Firewall Rule</h2>
+                <p>Define which network traffic should be allowed or blocked.</p>
+            </div>
+        </div>
+
+        <form action="/add_rule" method="POST" class="form-grid">
+
+            <div class="form-group">
+                <label>Source IP Address</label>
+                <input type="text" name="source_ip"
+                       placeholder="192.168.1.10 or ANY" required>
+            </div>
+
+            <div class="form-group">
+                <label>Destination Port</label>
+                <input type="text" name="port"
+                       placeholder="80 or ANY" required>
+            </div>
+
+            <div class="form-group">
+                <label>Protocol</label>
+                <select name="protocol">
+                    <option value="TCP">TCP</option>
+                    <option value="UDP">UDP</option>
+                    <option value="ANY">ANY</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Firewall Action</label>
+                <select name="action">
+                    <option value="ALLOW">ALLOW</option>
+                    <option value="BLOCK">BLOCK</option>
+                </select>
+            </div>
+
+            <button type="submit" class="primary-btn">
+                + Add Rule
+            </button>
+
+        </form>
+    </section>
+
+    <!-- PACKET TESTER -->
+
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Network Traffic Simulator</h2>
+                <p>Test a packet against your configured firewall rules.</p>
+            </div>
+            <span class="simulator-label">SIMULATION</span>
+        </div>
+
+        <form id="packetForm" class="form-grid">
+
+            <div class="form-group">
+                <label>Source IP Address</label>
+                <input name="source_ip" placeholder="192.168.1.10" required>
+            </div>
+
+            <div class="form-group">
+                <label>Port</label>
+                <input name="port" type="number"
+                       min="1" max="65535" placeholder="80" required>
+            </div>
+
+            <div class="form-group">
+                <label>Protocol</label>
+                <select name="protocol">
+                    <option value="TCP">TCP</option>
+                    <option value="UDP">UDP</option>
+                </select>
+            </div>
+
+            <button type="submit" class="test-btn">
+                Evaluate Traffic →
+            </button>
+
+        </form>
+
+        <div id="result" class="result-box">
+            <h3 id="decision">Waiting for packet...</h3>
+            <p id="reason">Submit a packet to see the firewall decision.</p>
+        </div>
+
+    </section>
+
+    <!-- RULE TABLE -->
+
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Firewall Rules</h2>
+                <p>All configured network security rules.</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Source IP</th>
+                        <th>Port</th>
+                        <th>Protocol</th>
+                        <th>Action</th>
+                        <th>Manage</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for rule in rules %}
+                    <tr>
+                        <td>#{{ rule.id }}</td>
+                        <td>{{ rule.source_ip }}</td>
+                        <td>{{ rule.port }}</td>
+                        <td>{{ rule.protocol }}</td>
+                        <td>
+                            <span class="action {{ rule.action|lower }}">
+                                {{ rule.action }}
+                            </span>
+                        </td>
+                        <td>
+                            <form action="/delete_rule/{{ rule.id }}"
+                                  method="POST"
+                                  onsubmit="return confirm('Delete this rule?')">
+                                <button class="delete-btn" type="submit">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty">
+                            No firewall rules configured yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- LOGS -->
+
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Traffic Activity Logs</h2>
+                <p>Recent firewall decisions and packet activity.</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Source IP</th>
+                        <th>Port</th>
+                        <th>Protocol</th>
+                        <th>Decision</th>
+                        <th>Reason</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.source_ip }}</td>
+                        <td>{{ log.port }}</td>
+                        <td>{{ log.protocol }}</td>
+                        <td>
+                            <span class="action {{ log.action|lower }}">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td>{{ log.reason }}</td>
+                        <td>{{ log.timestamp }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty">
+                            No traffic activity recorded.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    Firewall Rule Engine | Cybersecurity Project
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
